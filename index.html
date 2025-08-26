@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hover Music</title>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF0000">
 <style>
 /* Base body and container */
 body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:0; padding-bottom:120px; }
@@ -46,6 +48,19 @@ body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:
 #progressContainer{ width:100%; background:#333; height:3px; border-radius:3px; margin-top:4px; cursor:pointer; }
 #progressBar{ width:0%; height:100%; background:#FF0000; border-radius:3px; }
 
+/* Full-screen player overlay */
+#fullPlayer{
+  position:fixed; top:0; left:0; width:100%; height:100%; background:#121212; display:none;
+  flex-direction:column; justify-content:center; align-items:center; z-index:2000; padding:20px;
+}
+#fullPlayer img{ width:80%; max-width:400px; border-radius:12px; margin-bottom:20px; }
+#fullPlayer .songInfo{ text-align:center; margin-bottom:20px; }
+#fullPlayer .songInfo span{ display:block; color:#fff; margin:4px 0; }
+#fullPlayer .controls{ display:flex; gap:20px; }
+#fullPlayer .controls button{ background:none; border:none; color:#fff; font-size:32px; cursor:pointer; transition:0.2s; }
+#fullPlayer .controls button:hover{ color:#FF0000; }
+#fullPlayer.dragging{ transition:none; }
+
 /* Mobile adjustments */
 @media(max-width:500px){
   .top-menu{ flex-direction:column; align-items:flex-start; padding:8px 10px; }
@@ -58,7 +73,6 @@ body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:
   #miniPlayer .info span{ font-size:13px; }
   #miniPlayer .controls button{ font-size:16px; }
 }
-
 </style>
 </head>
 <body>
@@ -71,6 +85,7 @@ body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:
     <div class="menu-item" onclick="loadFavorites()"><span class="material-icons">favorite</span> Favorites</div>
   </div>
 </div>
+
 <div class="container">
   <div class="search-bar">
     <input type="text" id="searchQuery" placeholder="Search music...">
@@ -78,6 +93,8 @@ body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:
   </div>
   <div class="results" id="results"></div>
 </div>
+
+<!-- Mini-player -->
 <div id="miniPlayer" style="display:none;">
   <img id="miniThumb" src="">
   <div class="info">
@@ -94,24 +111,44 @@ body { font-family:'Roboto', sans-serif; background:#121212; color:#fff; margin:
     <button onclick="toggleRepeat()">🔁</button>
   </div>
 </div>
+
+<!-- Full-screen player -->
+<div id="fullPlayer">
+  <img id="fullThumb" src="">
+  <div class="songInfo">
+    <span id="fullTitle"></span>
+    <span id="fullArtist"></span>
+  </div>
+  <div id="fullProgressContainer" style="width:80%; height:4px; background:#333; border-radius:4px; margin-bottom:20px; cursor:pointer;">
+    <div id="fullProgressBar" style="width:0%; height:100%; background:#FF0000; border-radius:4px;"></div>
+  </div>
+  <div class="controls">
+    <button onclick="prevSong()">⏮️</button>
+    <button onclick="togglePlay()">▶️/⏸️</button>
+    <button onclick="nextSong()">⏭️</button>
+  </div>
+</div>
+
 <div id="playerDiv"></div>
+
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 let player, playerReady=false, playlist=[], currentIndex=0, isPlaying=false, shuffle=false, repeat=false;
 
-// Load saved playlist & init after player ready
-window.addEventListener('load', ()=>{
-  goHome();
-});
+window.addEventListener('load', ()=>{ goHome(); });
 
 function onYouTubeIframeAPIReady(){
-  player = new YT.Player('playerDiv',{height:'1',width:'1',videoId:'',events:{'onReady':()=>{playerReady=true; initAfterPlayerReady();},'onStateChange':onPlayerStateChange}});
+  player = new YT.Player('playerDiv',{
+    height:'1', width:'1', videoId:'',
+    playerVars:{ autoplay:0, controls:0, disablekb:1, modestbranding:1, rel:0, playsinline:1 },
+    events:{ 'onReady':()=>{playerReady=true; initAfterPlayerReady();}, 'onStateChange':onPlayerStateChange }
+  });
 }
 
 function initAfterPlayerReady(){
   const savedPlaylist = JSON.parse(localStorage.getItem('ytPlaylist') || '[]');
   const savedIndex = parseInt(localStorage.getItem('currentIndex') || '0');
-  if(savedPlaylist.length>0){ playlist=savedPlaylist; displayResults(); if(playlist[savedIndex]){ currentIndex=savedIndex; const song=playlist[currentIndex]; document.getElementById('miniPlayer').style.display='flex'; document.getElementById('miniThumb').src=song.thumb; document.getElementById('miniTitle').textContent=song.title; isPlaying=false; }} 
+  if(savedPlaylist.length>0){ playlist=savedPlaylist; displayResults(); if(playlist[savedIndex]){ currentIndex=savedIndex; const song=playlist[currentIndex]; document.getElementById('miniPlayer').style.display='flex'; document.getElementById('miniThumb').src=song.thumb; document.getElementById('miniTitle').textContent=song.title; isPlaying=false; updateMediaSession(); }} 
 }
 
 function searchSongs(query){
@@ -143,8 +180,8 @@ function playSong(index){
   const song=playlist[index];
   player.loadVideoById(song.id); player.playVideo(); isPlaying=true;
   const mini=document.getElementById('miniPlayer'); mini.style.display='flex'; mini.classList.remove('minimized');
-  document.getElementById('miniThumb').src=song.thumb;
-  document.getElementById('miniTitle').textContent=song.title;
+  document.getElementById('miniThumb').src=song.thumb; document.getElementById('miniTitle').textContent=song.title;
+  updateMediaSession();
   savePlaylist();
 }
 
@@ -153,7 +190,7 @@ function nextSong(){ if(shuffle) playSong(Math.floor(Math.random()*playlist.leng
 function prevSong(){ if(currentIndex>0) playSong(currentIndex-1); else if(repeat) playSong(playlist.length-1);}
 function toggleShuffle(){ shuffle=!shuffle; alert('Shuffle: '+(shuffle?'ON':'OFF'));}
 function toggleRepeat(){ repeat=!repeat; alert('Repeat: '+(repeat?'ON':'OFF'));}
-setInterval(()=>{ if(player && player.getCurrentTime && player.getDuration){ const p=(player.getCurrentTime()/player.getDuration())*100; document.getElementById('progressBar').style.width=p+'%'; } },500);
+setInterval(()=>{ if(player && player.getCurrentTime && player.getDuration){ const p=(player.getCurrentTime()/player.getDuration())*100; document.getElementById('progressBar').style.width=p+'%'; document.getElementById('fullProgressBar').style.width=p+'%'; } },500);
 function seekSong(e){ const rect=e.currentTarget.getBoundingClientRect(); const pos=(e.clientX-rect.left)/rect.width; player.seekTo(pos*player.getDuration(),true);}
 function savePlaylist(){ localStorage.setItem('ytPlaylist',JSON.stringify(playlist)); localStorage.setItem('currentIndex',currentIndex);}
 function saveSong(song){ let fav=JSON.parse(localStorage.getItem('ytFavorites')||'[]'); if(!fav.find(f=>f.id===song.id)){ fav.push(song); localStorage.setItem('ytFavorites',JSON.stringify(fav)); alert(`Saved "${song.title}"`);} else alert('Already saved'); }
@@ -168,11 +205,53 @@ mini.addEventListener('touchmove',e=>{ let delta=e.touches[0].clientY-startY; if
 function goHome(){ searchSongs("Top Trending Music"); }
 function goExplore(){ searchSongs("Recommended Music"); }
 function goLibrary(){ playlist=JSON.parse(localStorage.getItem('ytFavorites')||'[]'); displayResults(); }
-
 function onPlayerStateChange(event){ if(event.data===YT.PlayerState.ENDED) nextSong(); }
 
-// Register service worker for PWA
+// Full player overlay
+const fullPlayer = document.getElementById('fullPlayer');
+document.getElementById('miniPlayer').addEventListener('click', ()=>{
+  const song = playlist[currentIndex];
+  fullPlayer.style.display='flex';
+  document.getElementById('fullThumb').src=song.thumb;
+  document.getElementById('fullTitle').textContent=song.title;
+  document.getElementById('fullArtist').textContent=song.channelTitle||'Unknown Artist';
+});
+let startFullY=0;
+fullPlayer.addEventListener('touchstart', e=>{ startFullY=e.touches[0].clientY; fullPlayer.classList.add('dragging'); });
+fullPlayer.addEventListener('touchmove', e=>{
+  let delta = e.touches[0].clientY - startFullY;
+  if(delta>0) fullPlayer.style.transform=`translateY(${delta}px)`;
+});
+fullPlayer.addEventListener('touchend', e=>{
+  fullPlayer.classList.remove('dragging');
+  let delta = e.changedTouches[0].clientY - startFullY;
+  if(delta>100) { fullPlayer.style.display='none'; fullPlayer.style.transform='translateY(0)'; }
+  else fullPlayer.style.transform='translateY(0)';
+});
+document.getElementById('fullProgressContainer').addEventListener('click', e=>{
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pos = (e.clientX - rect.left)/rect.width;
+  player.seekTo(pos*player.getDuration(),true);
+});
+
+// Media Session API for background playback & lock screen controls
+function updateMediaSession(){
+  if('mediaSession' in navigator && playlist[currentIndex]){
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: playlist[currentIndex].title,
+      artist: playlist[currentIndex].channelTitle || 'Unknown Artist',
+      artwork: [{src: playlist[currentIndex].thumb, sizes:'512x512', type:'image/png'}]
+    });
+    navigator.mediaSession.setActionHandler('play', ()=>{ player.playVideo(); isPlaying=true; });
+    navigator.mediaSession.setActionHandler('pause', ()=>{ player.pauseVideo(); isPlaying=false; });
+    navigator.mediaSession.setActionHandler('previoustrack', prevSong);
+    navigator.mediaSession.setActionHandler('nexttrack', nextSong);
+  }
+}
+
+// Register service worker
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(()=>console.log('Service Worker Registered')); }
+
 </script>
 </body>
 </html>
