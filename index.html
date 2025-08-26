@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YouTube Music Web Player</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff0000">
 <style>
-body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; margin:0; padding-bottom: 100px; }
+body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; margin:0; padding-bottom: 120px; }
 .container { padding: 20px; max-width: 800px; margin: auto; }
 input[type="text"] { width: 60%; padding: 10px; border-radius: 5px; border: none; margin-right: 10px; }
 button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; background: #ff0000; color: #fff; }
@@ -14,9 +16,10 @@ button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; 
 .song:hover { background: #333; }
 .song-info { display: flex; align-items: center; }
 .song-info img { width: 50px; height: 50px; border-radius: 5px; margin-right: 10px; }
-#miniPlayer { position: fixed; bottom: 0; left: 0; right: 0; background: #111; display:flex; align-items:center; padding: 10px; box-shadow: 0 -2px 10px #000; border-top-left-radius: 10px; border-top-right-radius: 10px; z-index: 1000; }
+#miniPlayer { position: fixed; bottom: 0; left: 0; right: 0; background: #111; display:flex; align-items:center; padding: 10px; box-shadow: 0 -2px 10px #000; border-top-left-radius: 10px; border-top-right-radius: 10px; z-index: 1000; transition: transform 0.3s ease; cursor: grab; }
+#miniPlayer.minimized { transform: translateY(80px); cursor: pointer; }
 #miniPlayer img { width: 60px; height: 60px; border-radius: 5px; margin-right: 10px; }
-#miniPlayer .info { flex:1; }
+#miniPlayer .info { flex:1; overflow:hidden; }
 #miniPlayer .info span { display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #miniPlayer .controls button { margin: 0 5px; }
 #progressContainer { width: 100%; background: #333; height: 5px; border-radius: 5px; margin-top: 5px; cursor: pointer; }
@@ -120,8 +123,9 @@ function playSong(index) {
   player.playVideo();
   isPlaying = true;
 
-  // Show mini player
-  document.getElementById('miniPlayer').style.display = 'flex';
+  const mini = document.getElementById('miniPlayer');
+  mini.style.display = 'flex';
+  mini.classList.remove('minimized');
   document.getElementById('miniThumb').src = song.thumb;
   document.getElementById('miniTitle').textContent = song.title;
 }
@@ -137,12 +141,10 @@ function nextSong() {
   else if (currentIndex < playlist.length - 1) playSong(currentIndex + 1);
   else if (repeat) playSong(0);
 }
-
 function prevSong() {
   if (currentIndex > 0) playSong(currentIndex - 1);
   else if (repeat) playSong(playlist.length - 1);
 }
-
 function toggleShuffle() { shuffle = !shuffle; alert('Shuffle: ' + shuffle); }
 function toggleRepeat() { repeat = !repeat; alert('Repeat: ' + repeat); }
 
@@ -169,7 +171,6 @@ function saveSong(song) {
     alert(`Saved "${song.title}" to favorites!`);
   } else { alert(`"${song.title}" already in favorites`); }
 }
-
 function loadFavorites() {
   playlist = JSON.parse(localStorage.getItem('ytFavorites') || '[]');
   displayResults();
@@ -177,6 +178,21 @@ function loadFavorites() {
 
 function onPlayerStateChange(event) {
   if(event.data === YT.PlayerState.ENDED) nextSong();
+}
+
+// Mini-player swipe
+const mini = document.getElementById('miniPlayer');
+let startY = 0;
+mini.addEventListener('touchstart', e => { startY = e.touches[0].clientY; });
+mini.addEventListener('touchmove', e => {
+  let delta = e.touches[0].clientY - startY;
+  if(delta > 30) mini.classList.add('minimized');
+  else mini.classList.remove('minimized');
+});
+
+// Register service worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>console.log('Service Worker Registered'));
 }
 </script>
 </body>
