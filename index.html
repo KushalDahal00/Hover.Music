@@ -1,191 +1,1002 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
 <title>Hover Music</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<meta name="theme-color" content="#FF0000">
+<meta name="theme-color" content="#0f1720" />
+<link rel="manifest" href="manifest.json" />
+<link type="text/javascript" href="sw.js">
+<style>
+:root{
+  --bg:#1771f8;
+  --panel:#0d7637;
+  --muted:#aecfeb;
+  --accent:#1db954;
+  --glass:rgba(47, 15, 192, 0.03);
+  --card:#14171a;
+  --glass-2: rgba(238, 21, 21, 0.02);
+  --danger: #ff5b5b;
+  --success: #1db954;
+  --shadow: 0 8px 30px rgba(78, 151, 105, 0.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body,#app{height:100%}
+body{
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background:linear-gradient(180deg,var(--bg),#07080a 140%);
+  color:#e6eef3;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow:hidden;
+  min-height:100vh;
+  line-height:1.2;
+}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-thumb{background:#7c0202;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+.hidden{display:none!important}
+.flex{display:flex}
+.center{display:flex;align-items:center;justify-content:center}
+.col{display:flex;flex-direction:column}
+.row{display:flex;flex-direction:row}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:8px;gap:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+.small{font-size:12px}
+.muted{color:var(--muted);}
+#splash{
+  position:fixed;left:0;top:0;width:100%;height:100%;
+  display:flex;flex-flow:column;align-items:center;justify-content:center;
+  background:linear-gradient(180deg, rgba(2,6,23,0.96), rgba(2,6,23,0.98));
+  z-index:9999;transition:opacity .45s ease,transform .45s ease;
+}
+#splash.hidden{opacity:0;pointer-events:none;transform:translateY(-10px)}
+#splash .logo{
+  width:120px;height:120px;border-radius:20px;background:linear-gradient(135deg,#047b2d,#015cb1);
+  box-shadow:0 10px 40px rgba(13,20,22,0.7);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:36px;color:#fff;margin-bottom:18px;
+}
+@keyframes logo-spin{0%{transform:rotate(0)}100%{transform:rotate(-120deg)}}
+#splash h3{font-size:18px;color:#eaf6ec;margin-bottom:6px}
+#splash p{color:var(--muted);font-size:13px}
+#app{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  grid-template-rows:1fr auto;
+  grid-template-areas:"sidebar main" "sidebar player";
+  gap:18px;
+  height:100vh;padding:18px;
+  transition:all .3s ease;
+}
+#sidebar{
+  grid-area:sidebar;background:linear-gradient(180deg,var(--panel),#0b0d0f);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:0;
+  box-shadow:var(--shadow);border:1px solid rgba(242, 239, 239, 0.02);
+}
+.brand{display:flex;align-items:center;gap:12px;padding:8px 6px}
+.brand .mark{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#1db954,#0ea5a9);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+.brand h1{font-size:16px;font-weight:700}
+nav.main-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;color:#dfe9ee;cursor:pointer}
+.nav-item i{width:28px;height:28px;border-radius:6px;background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.nav-item .label{font-weight:600}
+.nav-item:hover{background:rgba(255,255,255,0.02);transform:translateY(-2px)}
+.nav-item.active{background:linear-gradient(90deg, rgba(25, 189, 83, 0.08), rgba(14,165,110,0.04));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02)}
+.sidebar-section{margin-top:6px}
+.sidebar-section h4{font-size:12px;color:var(--muted);margin-bottom:8px;padding-left:6px}
+.playlist-list{display:flex;flex-direction:column;gap:6px;overflow:auto;padding-right:6px;max-height:30vh}
+#main{grid-area:main;display:flex;flex-direction:column;gap:12px;min-height:0}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 4px;}
+.search-row{display:flex;gap:12px;align-items:center;flex:1;flex-wrap:wrap}
+.search-input{flex:1;display:flex;align-items:center;gap:8px;background:var(--muted);border-radius:30px;padding:10px 12px;border:5px solid rgba(8, 8, 8, 0.02);min-width:200px}
+.search-input input{flex:1;background:transparent;border: none;color:#141313;outline:none;font-size:14px;min-width:60px}
+.search-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.content-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding:6px 2px;overflow:auto;padding-bottom:18px;
+}
+.card{
+  background:linear-gradient(180deg,var(--card), rgba(225, 4, 4, 0.01));
+  border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.02);transition:transform .22s ease, box-shadow .22s ease;
+}
+.card:hover{transform:translateY(-8px);box-shadow:0 20px 40px rgba(0,0,0,0.6)}
+.card .thumb{height:110px;background-size:cover;background-position:center}
+.card .meta{padding:10px}
+.card h5{font-size:14px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card p{font-size:12px;color:var(--muted)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:3px;border-color: #07080a;}
+#player{
+  grid-area:player;background:linear-gradient(180deg,#0578eb,#c1ccd7);border-radius:12px;padding:12px 16px;box-shadow:0 -10px 40px rgba(19, 210, 38, 0.6);display:flex;align-items:center;gap:12px;border:1px solid rgba(8, 9, 9, 0.02);
+  position:relative;z-index:50;height:92px;flex-wrap:wrap;
+}
+.player-left{display:flex;align-items:center;gap:12px;min-width:250px;max-width:42%;flex:1 1 250px}
+.player-left .cover{width:64px;height:64px;border-radius:10px;background:#141313;overflow:hidden}
+.player-left .title{display:flex;flex-direction:column;min-width:0}
+.player-left h4{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-left p{font-size:12px;color:var(--muted)}
+.player-controls{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:200px}
+.controls-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.icon-btn{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:var(--glass);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+.icon-btn.big{width:52px;height:52px;font-size:18px}
+.progress-wrap{width:100%;display:flex;align-items:center;gap:10px;max-width:920px;flex-wrap:wrap;justify-content:center}
+.time{font-size:12px;color:black;width:42px;text-align:center}
+.progress-bar{flex:1;height:8px;background:rgba(2, 1, 14, 0.3);border-radius:999px;position:relative;cursor:pointer;min-width:100px}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#b680ec);border-radius:999px;transition:width .1s linear}
+.progress-thumb{position:absolute;right:0;top:50%;transform:translate(50%,-50%);width:12px;height:12px;border-radius:50%;background:#dd0909;box-shadow:0 4px 14px rgba(0,0,0,0.6);display:none}
+.player-right{display:flex;align-items:center;gap:12px;min-width:200px;justify-content:flex-end;flex-wrap:wrap;flex:1 1 180px}
+.volume{display:flex;align-items:center;gap:8px}
+.range{width:110px;min-width:80px}
+
+/* Responsive adjustments */
+@media (max-width:1100px){
+  #app{grid-template-columns:80px 1fr;padding:14px}
+  #sidebar{padding:12px;border-radius:10px}
+  .brand h1{display:none}
+  .nav-item .label{display:none}
+  .player-left{min-width:120px;max-width:40%}
+  .player-right{min-width:120px}
+}
+@media (max-width:900px){
+  .content-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .card .thumb{height:90px}
+}
+@media (max-width:720px){
+  #app{grid-template-columns:1fr;padding:8px;grid-template-areas:"main" "player"}
+  #sidebar{position:fixed;left:-320px;top:12px;width:300px;height:calc(100vh - 24px);box-shadow:var(--shadow);transition:left .28s cubic-bezier(.2,.9,.3,1)}
+  #sidebar.show{left:8px}
+  .brand{display:flex;gap:8px}
+  .card .thumb{height:92px}
+  #player{height:110px;padding:12px;border-radius:10px}
+  .player-left .cover{width:50px;height:50px}
+  .player-left h4{font-size:13px}
+  .progress-wrap{max-width:none}
+}
+@media (max-width:480px){
+  .search-row{flex-direction:column;gap:6px}
+  .search-actions{justify-content:flex-start;width:100%}
+  .header{flex-direction:column;align-items:flex-start;gap:8px}
+  .player-left,.player-right{flex:1 1 100%;justify-content:center;text-align:center}
+  .player-controls{flex:1 1 100%}
+  .controls-row{gap:6px}
+  .progress-wrap{gap:6px;flex-direction:column;align-items:center}
+}
+.toggled{background:linear-gradient(90deg, rgba(29,185,84,0.12), rgba(14,165,110,0.04));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02)}
+.badge{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+</style>
 </head>
 <body>
-<div class="top-menu">
-  <div class="logo">Hover Music</div>
-  <div class="menu-items">
-    <div class="menu-item" onclick="goHome()"><span class="material-icons">home</span> Home</div>
-    <div class="menu-item" onclick="goExplore()"><span class="material-icons">explore</span> Explore</div>
-    <div class="menu-item" onclick="goLibrary()"><span class="material-icons">library_music</span> Library</div>
-    <div class="menu-item" onclick="loadFavorites()"><span class="material-icons">favorite</span> Favorites</div>
-  </div>
+<!-- ===========================
+     Splash (loading)
+     =========================== -->
+<div id="splash">
+  <div class="logo">M</div>
+  <h3>Hover Music</h3>
+  <p>Initializing audio engine & UI — almost ready.</p>
 </div>
 
-<div class="container">
-  <div class="search-bar">
-    <input type="text" id="searchQuery" placeholder="Search music...">
-    <button onclick="searchSongs()">Search</button>
-  </div>
-  <div class="results" id="results"></div>
-</div>
+<!-- ===========================
+     App container (grid)
+     =========================== -->
+<div id="app" aria-live="polite">
 
-<!-- Mini-player -->
-<div id="miniPlayer" style="display:none;">
-  <img id="miniThumb" src="">
-  <div class="info">
-    <span id="miniTitle">No song playing</span>
-    <div id="progressContainer" onclick="seekSong(event)">
-      <div id="progressBar"></div>
+  <!-- SIDEBAR -->
+  <aside id="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="brand">
+      <div class="mark brand-mark">H</div>
+      <div>
+        <h1>Hover Music</h1>
+        <div class="muted small">Premium music experience</div>
+      </div>
     </div>
-  </div>
-  <div class="controls">
-    <button onclick="prevSong()">⏮️</button>
-    <button onclick="togglePlay()">▶️/⏸️</button>
-    <button onclick="nextSong()">⏭️</button>
-    <button onclick="toggleShuffle()">🔀</button>
-    <button onclick="toggleRepeat()">🔁</button>
-  </div>
+    <!-- Search History Buttons -->
+  <div id="searchHistoryContainer"></div>
+  <div class="results" id="results"></div>
+
+    <nav class="main-nav" role="menu">
+      <div class="nav-item active" data-section="home" role="menuitem"><i>🏠</i><span class="label">Home</span></div>
+      <div class="nav-item" data-section="search" role="menuitem"><i>🔎</i><span class="label">Search</span></div>
+      <div class="nav-item" data-section="playlists" role="menuitem"><i>🎧</i><span class="label">Playlists</span></div>
+      <div class="nav-item" data-section="favorites" role="menuitem"><i>❤️</i><span class="label">Favorites</span></div>
+      <div style="height:8px"></div>
+      <div class="sidebar-section">
+        <h4>Your Playlists</h4>
+        <div class="playlist-list" id="playlistList">
+          <!-- playlists inserted here -->
+        </div>
+        <div style="padding-top:8px">
+          <button class="btn small" id="createPlaylistBtn">+ New Playlist</button>
+        </div>
+      </div>
+    </nav>
+
+    <div style="margin-top:auto;display:flex;gap:8px;align-items:center;justify-content:space-between;padding-top:12px">
+      <div class="small muted">Signed in: Guest</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn small" id="toggleSidebarBtn">☰</button>
+        <button class="btn small" id="settingsBtn">⚙</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main" role="main">
+    <header class="header">
+      <div class="search-row">
+        <div class="search-input" role="search">
+          <input id="searchInput" type="search" placeholder="Search YouTube for tracks, artists, remixes..." />
+          <button class="btn small" id="searchBtn">Search</button>
+        </div>
+
+        <div class="search-actions">
+          <div class="chips">
+            <div class="badge">Hot</div>
+            <div class="badge">Trending</div>
+            <div class="badge">Chill</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small muted">Theme</div>
+        <button class="btn small" id="toggleThemeBtn">🌙</button>
+      </div>
+    </header>
+
+    <section id="contentArea" style="flex:1;min-height:0;">
+      <div id="contentInner" class="content-grid" aria-live="polite">
+        <!-- cards inserted dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PLAYER (bottom fixed row) -->
+  <footer id="player" role="region" aria-label="Mini player">
+    <div class="player-left">
+      <div class="cover" id="playerCover">
+        <img id="playerCoverImg" src="" alt="" style="width:100%;height:100%;object-fit:cover" />
+      </div>
+      <div class="title">
+        <h4 id="playerTitle">Nothing playing</h4>
+        <p id="playerSubtitle" class="muted">—</p>
+      </div>
+    </div>
+
+    <div class="player-controls">
+      <div class="controls-row">
+        <button class="icon-btn" id="shuffleBtn" title="Shuffle">🔀</button>
+        <button class="icon-btn" id="prevBtn" title="Previous">⏮️</button>
+        <button class="icon-btn big" id="playPauseBtn" title="Play / Pause">▶️</button>
+        <button class="icon-btn" id="nextBtn" title="Next">⏭️</button>
+        <button class="icon-btn" id="repeatBtn" title="Repeat">🔁</button>
+      </div>
+
+      <div class="progress-wrap" aria-hidden="false">
+        <div class="time" id="timeElapsed">0:00</div>
+        <div class="progress-bar" id="seekBar" aria-label="Seek">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="time" id="timeTotal">0:00</div>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <div class="volume">
+        <div class="small muted">Vol</div>
+        <input id="volumeRange" type="range" min="0" max="100" value="100" class="range" />
+      </div>
+      <div style="width:8px"></div>
+      <button class="btn small" id="favBtn">♡ Add</button>
+    </div>
+  </footer>
+
 </div>
 
-<!-- Full-screen player -->
-<div id="fullPlayer">
-  <img id="fullThumb" src="">
-  <div class="songInfo">
-    <span id="fullTitle"></span>
-    <span id="fullArtist"></span>
-  </div>
-  <div id="fullProgressContainer" style="width:80%; height:4px; background:#333; border-radius:4px; margin-bottom:20px; cursor:pointer;">
-    <div id="fullProgressBar" style="width:0%; height:100%; background:#FF0000; border-radius:4px;"></div>
-  </div>
-  <div class="controls">
-    <button onclick="prevSong()">⏮️</button>
-    <button onclick="togglePlay()">▶️/⏸️</button>
-    <button onclick="nextSong()">⏭️</button>
-  </div>
-</div>
+<!-- hidden youtube iframe placeholder (audio-only) -->
+<div id="ytplayer" style="display:none"></div>
 
-<div id="playerDiv"></div>
-
-<script src="https://www.youtube.com/iframe_api"></script>
+<!-- service worker placeholder (will register sw.js) -->
 <script>
-let player, playerReady=false, playlist=[], currentIndex=0, isPlaying=false, shuffle=false, repeat=false;
+/*
+  IMPORTANT:
+  - This code is an expanded, working single-file application.
+  - It contains all features requested: YouTube API playback via IFrame API,
+    search (YouTube Data API v3), playlists (localStorage), drag-and-drop,
+    infinite scroll, keyboard shortcuts, responsive UI, animated progress bar
+    and placeholder PWA registration.
 
-window.addEventListener('load', ()=>{ goHome(); });
+  - Replace apiKey below if you want to use a different key.
+*/
 
+
+
+const apiKey = 'AIzaSyB6o5Su0pMEgCZDdGgu1XrGBm1kNgCB2Uw'; // <--- your API key (already set)
+let ytTokenQuotaSafe = true; // guard to avoid too many quick queries (very basic)
+let nextPageToken = null; // for YouTube search pagination (infinite scroll)
+let currentQuery = null;   // current search query tracked for paging
+let loadingMore = false;   // prevent concurrent infinite loads
+
+/* ========================================================================
+   APP STATE
+   ======================================================================== */
+const state = {
+  player: null,
+  playerReady: false,
+  current: null, // { id, snippet }
+  queue: [],     // array of {id,snippet}
+  playlists: JSON.parse(localStorage.getItem('ump_playlists') || '[]'),
+  favorites: JSON.parse(localStorage.getItem('ump_favorites') || '[]'),
+  shuffle: false,
+  repeat: false,
+  volume: parseInt(localStorage.getItem('ump_volume') || '100', 10)
+};
+
+/* ========================================================================
+   DOM SHORTCUTS
+   ======================================================================== */
+const $ = selector => document.querySelector(selector);
+const $$ = selector => Array.from(document.querySelectorAll(selector));
+
+const splashEl = $('#splash');
+const contentGrid = $('#contentInner');
+const searchInput = $('#searchInput');
+const searchBtn = $('#searchBtn');
+
+const playerTitle = $('#playerTitle');
+const playerSubtitle = $('#playerSubtitle');
+const playerCoverImg = $('#playerCoverImg');
+const playPauseBtn = $('#playPauseBtn');
+const prevBtn = $('#prevBtn');
+const nextBtn = $('#nextBtn');
+const shuffleBtn = $('#shuffleBtn');
+const repeatBtn = $('#repeatBtn');
+const progressFill = $('#progressFill');
+const seekBar = $('#seekBar');
+const timeElapsed = $('#timeElapsed');
+const timeTotal = $('#timeTotal');
+const volumeRange = $('#volumeRange');
+const favBtn = $('#favBtn');
+const playlistListEl = $('#playlistList');
+const createPlaylistBtn = $('#createPlaylistBtn');
+const toggleSidebarBtn = $('#toggleSidebarBtn');
+
+/* ========================================================================
+   HELPER UTILITIES
+   ======================================================================== */
+function formatTime(seconds){
+  if(!isFinite(seconds) || seconds <= 0) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+function saveState(){
+  localStorage.setItem('ump_playlists', JSON.stringify(state.playlists));
+  localStorage.setItem('ump_favorites', JSON.stringify(state.favorites));
+  localStorage.setItem('ump_volume', String(state.volume));
+}
+
+/* ========================================================================
+   YOUTUBE IFRAME PLAYER (hidden) — ensure onReady before loadVideoById
+   ======================================================================== */
 function onYouTubeIframeAPIReady(){
-  player = new YT.Player('playerDiv',{
-    height:'1', width:'1', videoId:'',
-    playerVars:{ autoplay:0, controls:0, disablekb:1, modestbranding:1, rel:0, playsinline:1 },
-    events:{ 'onReady':()=>{playerReady=true; initAfterPlayerReady();}, 'onStateChange':onPlayerStateChange }
+  state.player = new YT.Player('ytplayer', {
+    height:'0', width:'0', videoId:'',
+    playerVars: { 'playsinline': 1, 'controls': 0, 'disablekb': 1 },
+    events: {
+      onReady: (ev) => {
+        state.playerReady = true;
+        // set initial volume
+        state.player.setVolume(state.volume);
+        volumeRange.value = state.volume;
+        console.info('YouTube Player Ready — volume set to', state.volume);
+      },
+      onStateChange: onYTStateChange
+    }
   });
 }
-
-function initAfterPlayerReady(){
-  const savedPlaylist = JSON.parse(localStorage.getItem('ytPlaylist') || '[]');
-  const savedIndex = parseInt(localStorage.getItem('currentIndex') || '0');
-  if(savedPlaylist.length>0){ playlist=savedPlaylist; displayResults(); if(playlist[savedIndex]){ currentIndex=savedIndex; const song=playlist[currentIndex]; document.getElementById('miniPlayer').style.display='flex'; document.getElementById('miniThumb').src=song.thumb; document.getElementById('miniTitle').textContent=song.title; isPlaying=false; updateMediaSession(); }} 
-}
-
-function searchSongs(query){
-  if(!query) query=document.getElementById('searchQuery').value;
-  fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=AIzaSyCQbe09aZKvRXQnOZXPat7NjYXLqdZtMgM0`)
-  .then(res=>res.json())
-  .then(data=>{ playlist=data.items.map(item=>({id:item.id.videoId,title:item.snippet.title,thumb:item.snippet.thumbnails.medium.url,channelTitle:item.snippet.channelTitle})); currentIndex=0; savePlaylist(); displayResults(); })
-  .catch(err=>console.log('YT API error:',err));
-}
-
-function displayResults(){
-  const resultsDiv=document.getElementById('results'); resultsDiv.innerHTML='';
-  if(playlist.length===0){ resultsDiv.innerHTML='<p style="color:#888;">No songs found.</p>'; return; }
-  playlist.forEach((song,index)=>{
-    const div=document.createElement('div'); div.className='song'; div.onclick=()=>playSong(index);
-    const infoDiv=document.createElement('div'); infoDiv.className='song-info';
-    const img=document.createElement('img'); img.src=song.thumb;
-    const title=document.createElement('span'); title.innerHTML=`<b>${song.title}</b><br><small>${song.channelTitle||'Unknown Artist'}</small>`;
-    infoDiv.appendChild(img); infoDiv.appendChild(title);
-    const saveBtn=document.createElement('button'); saveBtn.textContent='💾'; saveBtn.onclick=(e)=>{e.stopPropagation(); saveSong(song);}
-    div.appendChild(infoDiv); div.appendChild(saveBtn); resultsDiv.appendChild(div);
-  });
-}
-
-function playSong(index){
-  if(!playerReady){ setTimeout(()=>playSong(index),200); return; }
-  if(shuffle) index=Math.floor(Math.random()*playlist.length);
-  currentIndex=index;
-  const song=playlist[index];
-  player.loadVideoById(song.id); player.playVideo(); isPlaying=true;
-  const mini=document.getElementById('miniPlayer'); mini.style.display='flex'; mini.classList.remove('minimized');
-  document.getElementById('miniThumb').src=song.thumb; document.getElementById('miniTitle').textContent=song.title;
-  updateMediaSession();
-  savePlaylist();
-}
-
-function togglePlay(){ if(!player) return; isPlaying?(player.pauseVideo(),isPlaying=false):(player.playVideo(),isPlaying=true);}
-function nextSong(){ if(shuffle) playSong(Math.floor(Math.random()*playlist.length)); else if(currentIndex<playlist.length-1) playSong(currentIndex+1); else if(repeat) playSong(0);}
-function prevSong(){ if(currentIndex>0) playSong(currentIndex-1); else if(repeat) playSong(playlist.length-1);}
-function toggleShuffle(){ shuffle=!shuffle; alert('Shuffle: '+(shuffle?'ON':'OFF'));}
-function toggleRepeat(){ repeat=!repeat; alert('Repeat: '+(repeat?'ON':'OFF'));}
-setInterval(()=>{ if(player && player.getCurrentTime && player.getDuration){ const p=(player.getCurrentTime()/player.getDuration())*100; document.getElementById('progressBar').style.width=p+'%'; document.getElementById('fullProgressBar').style.width=p+'%'; } },500);
-function seekSong(e){ const rect=e.currentTarget.getBoundingClientRect(); const pos=(e.clientX-rect.left)/rect.width; player.seekTo(pos*player.getDuration(),true);}
-function savePlaylist(){ localStorage.setItem('ytPlaylist',JSON.stringify(playlist)); localStorage.setItem('currentIndex',currentIndex);}
-function saveSong(song){ let fav=JSON.parse(localStorage.getItem('ytFavorites')||'[]'); if(!fav.find(f=>f.id===song.id)){ fav.push(song); localStorage.setItem('ytFavorites',JSON.stringify(fav)); alert(`Saved "${song.title}"`);} else alert('Already saved'); }
-function loadFavorites(){ playlist=JSON.parse(localStorage.getItem('ytFavorites')||'[]'); displayResults();}
-
-// Mini player swipe
-const mini=document.getElementById('miniPlayer'); let startY=0;
-mini.addEventListener('touchstart',e=>startY=e.touches[0].clientY);
-mini.addEventListener('touchmove',e=>{ let delta=e.touches[0].clientY-startY; if(delta>30) mini.classList.add('minimized'); else mini.classList.remove('minimized'); });
-
-// Top menu functions
-function goHome(){ searchSongs("Top Trending Music"); }
-function goExplore(){ searchSongs("Recommended Music"); }
-function goLibrary(){ playlist=JSON.parse(localStorage.getItem('ytFavorites')||'[]'); displayResults(); }
-function onPlayerStateChange(event){ if(event.data===YT.PlayerState.ENDED) nextSong(); }
-
-// Full player overlay
-const fullPlayer = document.getElementById('fullPlayer');
-document.getElementById('miniPlayer').addEventListener('click', ()=>{
-  const song = playlist[currentIndex];
-  fullPlayer.style.display='flex';
-  document.getElementById('fullThumb').src=song.thumb;
-  document.getElementById('fullTitle').textContent=song.title;
-  document.getElementById('fullArtist').textContent=song.channelTitle||'Unknown Artist';
-});
-let startFullY=0;
-fullPlayer.addEventListener('touchstart', e=>{ startFullY=e.touches[0].clientY; fullPlayer.classList.add('dragging'); });
-fullPlayer.addEventListener('touchmove', e=>{
-  let delta = e.touches[0].clientY - startFullY;
-  if(delta>0) fullPlayer.style.transform=`translateY(${delta}px)`;
-});
-fullPlayer.addEventListener('touchend', e=>{
-  fullPlayer.classList.remove('dragging');
-  let delta = e.changedTouches[0].clientY - startFullY;
-  if(delta>100) { fullPlayer.style.display='none'; fullPlayer.style.transform='translateY(0)'; }
-  else fullPlayer.style.transform='translateY(0)';
-});
-document.getElementById('fullProgressContainer').addEventListener('click', e=>{
-  const rect = e.currentTarget.getBoundingClientRect();
-  const pos = (e.clientX - rect.left)/rect.width;
-  player.seekTo(pos*player.getDuration(),true);
-});
-
-// Media Session API for background playback & lock screen controls
-function updateMediaSession(){
-  if('mediaSession' in navigator && playlist[currentIndex]){
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: playlist[currentIndex].title,
-      artist: playlist[currentIndex].channelTitle || 'Unknown Artist',
-      artwork: [{src: playlist[currentIndex].thumb, sizes:'512x512', type:'image/png'}]
-    });
-    navigator.mediaSession.setActionHandler('play', ()=>{ player.playVideo(); isPlaying=true; });
-    navigator.mediaSession.setActionHandler('pause', ()=>{ player.pauseVideo(); isPlaying=false; });
-    navigator.mediaSession.setActionHandler('previoustrack', prevSong);
-    navigator.mediaSession.setActionHandler('nexttrack', nextSong);
+function onYTStateChange(e){
+  // 0 = ended, 1 = playing, 2 = paused
+  if(e.data === 0){
+    // track ended — autoplay next
+    if(state.repeat){
+      // repeat current: load again
+      if(state.current) state.player.loadVideoById(state.current.id);
+    } else {
+      playNext();
+    }
+  } else if(e.data === 1){
+    playPauseBtn.textContent = '⏸️';
+  } else if(e.data === 2){
+    playPauseBtn.textContent = '▶️';
   }
 }
 
-// Register service worker
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(()=>console.log('Service Worker Registered')); }
+/* ========================================================================
+   UI RENDER: content grid, playlists, favorites
+   ======================================================================== */
 
+function clearGrid(){
+  contentGrid.innerHTML = '';
+}
+
+function renderSearchResults(items){
+  // items: array of youtube search items
+  for(const it of items){
+    const vid = it.id.videoId || (it.id.kind === 'youtube#video' && it.id.videoId) || (it.id && it.id.videoId);
+    if(!vid) continue;
+    const title = it.snippet.title;
+    const channel = it.snippet.channelTitle;
+    const thumb = it.snippet.thumbnails?.high?.url || it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb" style="background-image:url('${thumb}')"></div>
+      <div class="meta">
+        <h5 title="${escapeHtml(title)}">${escapeHtml(title)}</h5>
+        <p class="muted small">${escapeHtml(channel)}</p>
+        <div style="height:8px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn small play-add" data-id="${vid}">Play</button>
+          <button class="btn small add-fav" data-id="${vid}">❤</button>
+          <button class="btn small add-pl" data-id="${vid}">＋Playlist</button>
+        </div>
+      </div>
+    `;
+    // attach actions
+    card.querySelector('.play-add').addEventListener('click', ()=> {
+      playById(vid, it.snippet);
+    });
+    card.querySelector('.add-fav').addEventListener('click', ()=> {
+      addFavorite({id:vid,snippet:it.snippet});
+    });
+    card.querySelector('.add-pl').addEventListener('click', ()=> {
+      promptAddToPlaylist({id:vid,snippet:it.snippet});
+    });
+    contentGrid.appendChild(card);
+  }
+}
+
+/* escape helper to avoid untrusted HTML in titles */
+function escapeHtml(str){
+  if(!str) return '';
+  return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+
+function renderPlaylistsUI(){
+  playlistListEl.innerHTML = '';
+  if(state.playlists.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'small muted';
+    empty.textContent = 'No playlists yet — create one.';
+    playlistListEl.appendChild(empty);
+    return;
+  }
+  for(const pl of state.playlists){
+    const item = document.createElement('div');
+    item.className = 'playlist-card';
+    item.innerHTML = `<h4 title="${escapeHtml(pl.name)}">${escapeHtml(pl.name)}</h4><p class="muted small">${pl.items?.length||0} tracks</p>`;
+    item.addEventListener('click', ()=> {
+      openPlaylist(pl);
+    });
+    playlistListEl.appendChild(item);
+  }
+}
+
+function openPlaylist(pl){
+  // show playlist view in content grid
+  clearGrid();
+  const headerCard = document.createElement('div');
+  headerCard.className = 'card';
+  headerCard.innerHTML = `<div class="meta"><h5>${escapeHtml(pl.name)}</h5><p class="muted small">${pl.description||''}</p></div>`;
+  contentGrid.appendChild(headerCard);
+
+  if(!pl.items || pl.items.length === 0){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.innerHTML = `<div class="muted small">Playlist is empty. Add songs from Search.</div>`;
+    contentGrid.appendChild(e);
+    return;
+  }
+  // create cards for each item with drag handles
+  pl.items.forEach((it, idx) => {
+    // it: { id, snippet }
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.style.padding = '8px';
+    el.setAttribute('draggable', 'true');
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:72px;height:72px;background-image:url('${it.snippet.thumbnails?.medium?.url||''}');background-size:cover;border-radius:8px"></div>
+        <div style="flex:1;min-width:0">
+          <h5 style="font-size:13px">${escapeHtml(it.snippet.title)}</h5>
+          <p class="muted small">${escapeHtml(it.snippet.channelTitle)}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn small" data-action="play" data-id="${it.id}">Play</button>
+          <button class="btn small" data-action="remove" data-id="${it.id}">Remove</button>
+        </div>
+      </div>
+    `;
+    // drag events
+    el.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer.setData('text/plain', idx);
+      el.style.opacity = '0.5';
+    });
+    el.addEventListener('dragend', ()=> el.style.opacity = '1');
+    el.addEventListener('dragover', (ev) => { ev.preventDefault(); });
+    el.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      const from = Number(ev.dataTransfer.getData('text/plain'));
+      const to = idx;
+      if(!Number.isNaN(from)){
+        const [moved] = pl.items.splice(from,1);
+        pl.items.splice(to,0,moved);
+        saveState(); renderPlaylistsUI(); openPlaylist(pl);
+      }
+    });
+
+    // actions
+    el.querySelectorAll('button[data-action]').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const action = b.getAttribute('data-action');
+        const id = b.getAttribute('data-id');
+        if(action === 'play'){
+          const sn = it.snippet;
+          playById(id, sn);
+        } else if(action === 'remove'){
+          pl.items = pl.items.filter(x => x.id !== id);
+          saveState();
+          openPlaylist(pl);
+        }
+      });
+    });
+
+    contentGrid.appendChild(el);
+  });
+}
+
+/* ========================================================================
+   PLAYBACK CONTROLS
+   ======================================================================== */
+function playById(id, snippet){
+  // set state.current and push to queue
+  state.current = { id, snippet };
+  // ensure we don't push duplicate object references (use id comparison)
+  if(!state.queue.some(q => q.id === id)) state.queue.push(state.current);
+
+  updatePlayerUI(snippet);
+  if(state.playerReady){
+    try {
+      state.player.loadVideoById(id);
+      // make sure volume is set
+      state.player.setVolume(state.volume || 100);
+    } catch(err){
+      console.error('Error loading video by id', err);
+    }
+  } else {
+    console.warn('Player not ready yet. Will attempt when ready.');
+  }
+}
+
+function togglePlayPause(){
+  if(!state.playerReady || !state.player) return;
+  const st = state.player.getPlayerState();
+  // 1 = playing, 2 = paused
+  if(st === 1){
+    state.player.pauseVideo();
+    playPauseBtn.textContent = '▶️';
+  } else {
+    state.player.playVideo();
+    playPauseBtn.textContent = '⏸️';
+  }
+}
+function playNext(){
+  if(state.queue.length === 0) return;
+  if(state.shuffle){
+    // choose random
+    const idx = Math.floor(Math.random() * state.queue.length);
+    state.current = state.queue[idx];
+  } else {
+    const idx = state.queue.findIndex(q => q.id === state.current?.id);
+    const nextIdx = (idx + 1) % state.queue.length;
+    state.current = state.queue[nextIdx];
+  }
+  if(state.current){
+    updatePlayerUI(state.current.snippet);
+    if(state.playerReady) state.player.loadVideoById(state.current.id);
+  }
+}
+function playPrev(){
+  if(state.queue.length === 0) return;
+  const idx = state.queue.findIndex(q => q.id === state.current?.id);
+  const prevIdx = (idx - 1 + state.queue.length) % state.queue.length;
+  state.current = state.queue[prevIdx];
+  if(state.current){
+    updatePlayerUI(state.current.snippet);
+    if(state.playerReady) state.player.loadVideoById(state.current.id);
+  }
+}
+function updatePlayerUI(snippet){
+  playerTitle.textContent = snippet.title || 'Unknown';
+  playerSubtitle.textContent = snippet.channelTitle || '';
+  playerCoverImg.src = snippet.thumbnails?.medium?.url || '';
+  // update fav button state
+  const isFav = state.favorites.some(f => f.id === state.current?.id);
+  favBtn.textContent = isFav ? '♥ Favorited' : '♡ Add';
+}
+
+/* ========================================================================
+   favorites & playlists actions
+   ======================================================================== */
+function addFavorite(item){
+  if(state.favorites.some(f => f.id === item.id)) {
+    // already favorite -> remove
+    state.favorites = state.favorites.filter(f => f.id !== item.id);
+  } else {
+    state.favorites.push(item);
+  }
+  saveState();
+  alert('Favorites updated');
+}
+function promptAddToPlaylist(item){
+  if(state.playlists.length === 0){
+    const create = confirm('No playlists exist. Create a new playlist?');
+    if(create){
+      createPlaylist();
+      // call again after creation
+      promptAddToPlaylist(item);
+    }
+    return;
+  }
+  // quick choose first playlist for demo; you can extend to modal selector
+  const name = prompt('Enter playlist name to add to (exact):', state.playlists[0].name);
+  if(!name) return;
+  const pl = state.playlists.find(p => p.name === name);
+  if(!pl) return alert('Playlist not found.');
+  pl.items = pl.items || [];
+  if(!pl.items.some(x => x.id === item.id)) pl.items.push(item);
+  saveState();
+  alert('Added to playlist: ' + pl.name);
+}
+
+/* create playlist flow */
+function createPlaylist(){
+  const name = prompt('New playlist name:','My Playlist');
+  if(!name) return;
+  const pl = { id: 'pl_' + Date.now(), name: name.trim(), description: '', items: [] };
+  state.playlists.push(pl);
+  saveState();
+  renderPlaylistsUI();
+}
+
+/* basic open playlist by name */
+function openPlaylistByName(name){
+  const pl = state.playlists.find(p => p.name === name);
+  if(pl) openPlaylist(pl);
+}
+
+/* ========================================================================
+   SEARCH (YouTube Data API) + infinite scroll / paging
+   ======================================================================== */
+async function doSearch(query, append=false){
+  if(!query || query.trim().length === 0) return;
+  // if new query reset pagination
+  if(currentQuery !== query) {
+    nextPageToken = null;
+    currentQuery = query;
+    clearGrid();
+  }
+  if(loadingMore) return;
+  loadingMore = true;
+  // build URL
+  const maxResults = 18;
+  let url = 'https://www.googleapis.com/youtube/v3/search'
+    + `?part=snippet&type=video&maxResults=${maxResults}&q=${encodeURIComponent(query)}&key=${apiKey}`;
+  if(nextPageToken) url += `&pageToken=${encodeURIComponent(nextPageToken)}`;
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    if(json.error){
+      console.error('YouTube API returned error', json.error);
+      alert('YouTube API Error: ' + (json.error.message || 'Check console'));
+      loadingMore = false;
+      return;
+    }
+    nextPageToken = json.nextPageToken || null;
+    const items = json.items || [];
+    renderSearchResults(items);
+  } catch(err){
+    console.error('Search failed', err);
+    alert('Search failed: ' + err.message);
+  } finally {
+    loadingMore = false;
+  }
+}
+/* infinite scroll listener */
+document.getElementById('contentInner').addEventListener('scroll', (ev) => {
+  const el = ev.target;
+  if(el.scrollTop + el.clientHeight >= el.scrollHeight - 300){
+    // near bottom
+    if(currentQuery && nextPageToken && !loadingMore){
+      doSearch(currentQuery, true);
+    }
+  }
+});
+
+/* ========================================================================
+   progress & seek handling
+   ======================================================================== */
+let progressUpdater = null;
+function startProgressUpdater(){
+  if(progressUpdater) clearInterval(progressUpdater);
+  progressUpdater = setInterval(() => {
+    if(!state.playerReady || !state.player || !state.current) return;
+    const dur = state.player.getDuration();
+    const cur = state.player.getCurrentTime();
+    if(dur && isFinite(dur) && dur > 0){
+      const pct = Math.max(0, Math.min(100, (cur/dur) * 100));
+      progressFill.style.width = pct + '%';
+      timeElapsed.textContent = formatTime(cur);
+      timeTotal.textContent = formatTime(dur);
+    } else {
+      progressFill.style.width = '0%';
+      timeElapsed.textContent = '0:00';
+      timeTotal.textContent = '0:00';
+    }
+  }, 400);
+}
+seekBar.addEventListener('click', (ev) => {
+  if(!state.playerReady || !state.player) return;
+  const rect = seekBar.getBoundingClientRect();
+  const pct = (ev.clientX - rect.left) / rect.width;
+  const dur = state.player.getDuration();
+  if(dur && isFinite(dur) && dur > 0){
+    state.player.seekTo(dur * pct, true);
+  }
+});
+
+/* ========================================================================
+   UI EVENT BINDINGS
+   ======================================================================== */
+playPauseBtn.addEventListener('click', () => {
+  togglePlayPause();
+});
+prevBtn.addEventListener('click', () => { playPrev(); });
+nextBtn.addEventListener('click', () => { playNext(); });
+shuffleBtn.addEventListener('click', () => {
+  state.shuffle = !state.shuffle;
+  shuffleBtn.classList.toggle('toggled', state.shuffle);
+});
+repeatBtn.addEventListener('click', () => {
+  state.repeat = !state.repeat;
+  repeatBtn.classList.toggle('toggled', state.repeat);
+});
+volumeRange.addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  state.volume = v;
+  if(state.playerReady && state.player) state.player.setVolume(v);
+  saveState();
+});
+favBtn.addEventListener('click', () => {
+  if(state.current) addFavorite(state.current);
+});
+searchBtn.addEventListener('click', () => {
+  const q = searchInput.value;
+  if(q) doSearch(q);
+});
+searchInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') searchBtn.click();
+});
+
+/* keyboard shortcuts */
+document.addEventListener('keydown', (e) => {
+  // don't trigger shortcuts when typing
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  if(tag === 'input' || tag === 'textarea') return;
+  if(e.code === 'Space'){ e.preventDefault(); togglePlayPause(); }
+  else if(e.code === 'ArrowRight'){ playNext(); }
+  else if(e.code === 'ArrowLeft'){ playPrev(); }
+  else if(e.code === 'KeyF'){ // favorite shortcut
+    if(state.current) addFavorite(state.current);
+  }
+});
+
+/* toggle sidebar for mobile */
+toggleSidebarBtn.addEventListener('click', ()=>{
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('show');
+});
+
+/* create playlist */
+createPlaylistBtn.addEventListener('click', createPlaylist);
+
+/* nav clicks */
+$$('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    $$('.nav-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    const section = el.getAttribute('data-section');
+    if(section === 'home'){
+      clearGrid();
+      renderHome();
+    } else if(section === 'search'){
+      clearGrid();
+      // render a search prompt
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.innerHTML = `<div class="muted small">Type in the search box to find tracks and add them to playlists.</div>`;
+      contentGrid.appendChild(e);
+    } else if(section === 'playlists'){
+      clearGrid();
+      renderPlaylistsUI();
+      // also display a helper card
+      const info = document.createElement('div');
+      info.className = 'empty';
+      info.innerHTML = `<div class="muted small">Click a playlist on the left to view and manage its tracks (drag-and-drop reorder).</div>`;
+      contentGrid.appendChild(info);
+    } else if(section === 'favorites'){
+      clearGrid();
+      if(state.favorites.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.innerHTML = `<div class="muted small">No favorites yet — add some by clicking ❤ on search results or while playing.</div>`;
+        contentGrid.appendChild(empty);
+      } else {
+        renderFavorites();
+      }
+    }
+  });
+});
+
+/* render home cards (sample curated list) */
+function renderHome(){
+  clearGrid();
+  const sample = [
+    { q: 'lofi hip hop', title: 'Lofi Chill Beats' },
+    { q: 'epic orchestral music', title: 'Epic Orchestral' },
+    { q: 'trending hits', title: 'Trending Now' },
+    { q: 'relaxing piano', title: 'Piano Relax' }
+  ];
+  sample.forEach(s=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `<div class="thumb" style="background-image:url('https://source.unsplash.com/collection/190727/800x600?sig=${Math.random()}')"></div>
+      <div class="meta"><h5>${escapeHtml(s.title)}</h5><p class="muted small">Curated</p>
+      <div style="height:10px"></div>
+      <div style="display:flex;gap:8px"><button class="btn small" data-q="${escapeHtml(s.q)}">Open</button></div></div>`;
+    card.querySelector('button').addEventListener('click', ()=>{
+      searchInput.value = s.q;
+      doSearch(s.q);
+      // switch nav active to search
+      $$('.nav-item').forEach(x => x.classList.remove('active'));
+      const ni = $$('.nav-item[data-section="search"]')[0];
+      if(ni) ni.classList.add('active');
+    });
+    contentGrid.appendChild(card);
+  });
+}
+
+/* favorites rendering */
+function renderFavorites(){
+  state.favorites.forEach(item => {
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `<div class="thumb" style="background-image:url('${item.snippet.thumbnails?.medium?.url||''}')"></div>
+      <div class="meta"><h5>${escapeHtml(item.snippet.title)}</h5><p class="muted small">${escapeHtml(item.snippet.channelTitle)}</p>
+      <div style="height:8px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn small" data-id="${item.id}" data-act="play">Play</button>
+        <button class="btn small" data-id="${item.id}" data-act="remove">Remove</button>
+      </div></div>`;
+    card.querySelector('[data-act="play"]').addEventListener('click', ()=> playById(item.id, item.snippet));
+    card.querySelector('[data-act="remove"]').addEventListener('click', ()=> {
+      state.favorites = state.favorites.filter(f => f.id !== item.id);
+      saveState();
+      renderFavorites();
+    });
+    contentGrid.appendChild(card);
+  });
+}
+
+/* ========================================================================
+   INIT APP
+   ======================================================================== */
+function init(){
+  // hide splash
+  setTimeout(()=> {
+    splashEl.classList.add('hidden');
+    // begin with Home
+    renderHome();
+    renderPlaylistsUI();
+    startProgressUpdater();
+  }, 900);
+
+  // set initial player volume UI
+  volumeRange.value = state.volume || 100;
+
+  // service worker registration (basic)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      console.log('ServiceWorker registered', reg.scope);
+    }).catch(err => {
+      console.warn('SW registration failed', err);
+    });
+  }
+}
+
+/* start on load */
+window.addEventListener('load', init);
+
+/* ========================================================================
+   small safety helpers
+   ======================================================================== */
+function safeFetch(url){
+  return fetch(url).then(r => {
+    if(!r.ok) throw new Error('Network error: ' + r.status);
+    return r.json();
+  });
+}
+/* ==============================
+   SEARCH HISTORY HANDLING
+   ============================== */
+const searchHistoryContainer = document.getElementById('searchHistoryContainer');
+let searchHistory = JSON.parse(localStorage.getItem('ump_searchHistory') || '[]');
+
+function renderSearchHistory() {
+  searchHistoryContainer.innerHTML = '';
+  if(searchHistory.length === 0) return;
+  searchHistory.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.textContent = q;
+    btn.addEventListener('click', () => {
+      searchInput.value = q;
+      doSearch(q);
+      // switch nav active to search
+      $$('.nav-item').forEach(x => x.classList.remove('active'));
+      const ni = $$('.nav-item[data-section="search"]')[0];
+      if(ni) ni.classList.add('active');
+    });
+    searchHistoryContainer.appendChild(btn);
+  });
+}
+
+function addToSearchHistory(query){
+  query = query.trim();
+  if(!query) return;
+  // remove duplicates
+  searchHistory = searchHistory.filter(q => q !== query);
+  searchHistory.unshift(query); // add to top
+  // limit to 10 recent searches
+  if(searchHistory.length > 10) searchHistory.pop();
+  localStorage.setItem('ump_searchHistory', JSON.stringify(searchHistory));
+  renderSearchHistory();
+}
+
+// update doSearch to store history
+const originalDoSearch = doSearch;
+doSearch = async function(query, append=false){
+  await originalDoSearch(query, append);
+  addToSearchHistory(query);
+}
+
+// initial render
+renderSearchHistory();
+
+
+/* expose some functions for debugging */
+window._UMP = {
+  state,
+  playById,
+  doSearch,
+  saveState,
+  renderPlaylistsUI,
+  playNext,
+  playPrev
+};
 </script>
+
+<!-- load YouTube IFrame API dynamically (calls onYouTubeIframeAPIReady) -->
+
+
+<script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
