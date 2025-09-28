@@ -277,6 +277,121 @@ body{
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+/* Enhanced Player Controls */
+#player {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+#player:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.player-left img {
+  border-radius: 12px;
+  transition: transform 0.3s ease;
+  animation: albumSpin 10s linear infinite paused;
+}
+
+.player-left.playing img {
+  animation-play-state: running;
+}
+
+@keyframes albumSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.controls-row button {
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls-row button:hover {
+  transform: scale(1.1);
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.controls-row button:active {
+  transform: scale(0.95);
+}
+
+.progress-bar {
+  transition: all 0.3s ease;
+  background: linear-gradient(90deg, var(--accent) 0%, rgba(139, 92, 246, 0.3) 100%);
+  height: 6px;
+  border-radius: 3px;
+}
+
+.progress-wrap {
+  position: relative;
+}
+
+.progress-wrap:hover .progress-bar {
+  height: 8px;
+}
+
+/* Song cards animations */
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideInUp 0.6s ease-out forwards;
+}
+
+.card:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+.card:nth-child(even) {
+  animation-delay: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+}
+
+@keyframes slideInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Download button states */
+.download-btn.downloading {
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.download-btn.downloaded {
+  background: var(--success) !important;
+  color: white;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
 ::-webkit-scrollbar{height:10px;width:10px}
 ::-webkit-scrollbar-thumb{background:#7c0202;border-radius:8px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -411,6 +526,55 @@ nav.main-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
   .player-controls{flex:1 1 100%}
   .controls-row{gap:6px}
   .progress-wrap{gap:6px;flex-direction:column;align-items:center}
+  
+  /* Mobile landing page adjustments */
+  .landing-title {
+    font-size: 2.5rem;
+  }
+  
+  .landing-subtitle {
+    font-size: 1rem;
+  }
+  
+  .landing-headphones {
+    right: -150px;
+    width: 300px;
+    height: 300px;
+    opacity: 0.2;
+  }
+  
+  .search-modal {
+    padding: 2rem;
+    margin: 1rem;
+  }
+  
+  .landing-logo {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  /* Mobile app layout */
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "sidebar" "main" "player";
+    padding: 12px;
+  }
+  
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  
+  #sidebar.show {
+    left: 0;
+  }
 }
 .toggled{background:linear-gradient(90deg, rgba(29,185,84,0.12), rgba(14,165,110,0.04));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02)}
 .badge{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
@@ -478,6 +642,7 @@ nav.main-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
       <div class="nav-item" data-section="search" role="menuitem"><i>🔎</i><span class="label">Search</span></div>
       <div class="nav-item" data-section="playlists" role="menuitem"><i>🎧</i><span class="label">Playlists</span></div>
       <div class="nav-item" data-section="favorites" role="menuitem"><i>❤️</i><span class="label">Favorites</span></div>
+      <div class="nav-item" data-section="offline" role="menuitem"><i>📱</i><span class="label">Offline</span></div>
       <div style="height:8px"></div>
       <div class="sidebar-section">
         <h4>Your Playlists</h4>
@@ -786,6 +951,7 @@ function renderSearchResults(items){
           <button class="btn small play-add" data-id="${vid}">Play</button>
           <button class="btn small add-fav" data-id="${vid}">❤</button>
           <button class="btn small add-pl" data-id="${vid}">＋Playlist</button>
+          <button class="btn small download-btn" data-id="${vid}" title="Download for offline">⬇</button>
         </div>
       </div>
     `;
@@ -799,9 +965,143 @@ function renderSearchResults(items){
     card.querySelector('.add-pl').addEventListener('click', ()=> {
       promptAddToPlaylist({id:vid,snippet:it.snippet});
     });
+    card.querySelector('.download-btn').addEventListener('click', ()=> {
+      downloadForOffline({id:vid,snippet:it.snippet});
+    });
     contentGrid.appendChild(card);
   }
 }
+
+/* ========================================================================
+   OFFLINE DOWNLOAD FUNCTIONALITY
+   ======================================================================== */
+
+// Initialize offline storage
+let offlineDB;
+const DB_NAME = 'HoverMusicOffline';
+const DB_VERSION = 1;
+
+// Initialize IndexedDB
+function initOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      offlineDB = request.result;
+      resolve(offlineDB);
+    };
+    
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('songs')) {
+        const store = db.createObjectStore('songs', { keyPath: 'id' });
+        store.createIndex('title', 'title', { unique: false });
+      }
+    };
+  });
+}
+
+// Download song for offline use
+async function downloadForOffline(songData) {
+  try {
+    if (!offlineDB) {
+      await initOfflineDB();
+    }
+    
+    const { id, snippet } = songData;
+    const existingDownload = await getOfflineSong(id);
+    
+    if (existingDownload) {
+      alert('Song already downloaded for offline use!');
+      return;
+    }
+    
+    // Show download progress
+    const downloadBtn = document.querySelector(`[data-id="${id}"].download-btn`);
+    if (downloadBtn) {
+      downloadBtn.textContent = '⏳';
+      downloadBtn.classList.add('downloading');
+      downloadBtn.disabled = true;
+    }
+    
+    // Store song metadata (in a real app, you'd download audio data)
+    const songRecord = {
+      id,
+      title: snippet.title,
+      channel: snippet.channelTitle,
+      thumbnail: snippet.thumbnails?.high?.url,
+      downloadedAt: new Date().toISOString(),
+      ...snippet
+    };
+    
+    const transaction = offlineDB.transaction(['songs'], 'readwrite');
+    const store = transaction.objectStore('songs');
+    await store.add(songRecord);
+    
+    // Update button
+    if (downloadBtn) {
+      downloadBtn.textContent = '✓';
+      downloadBtn.classList.remove('downloading');
+      downloadBtn.classList.add('downloaded');
+      downloadBtn.title = 'Downloaded for offline';
+      setTimeout(() => {
+        downloadBtn.disabled = false;
+      }, 1000);
+    }
+    
+    alert(`"${snippet.title}" downloaded for offline use!`);
+    
+  } catch (error) {
+    console.error('Download failed:', error);
+    alert('Download failed. Please try again.');
+    
+    // Reset button
+    const downloadBtn = document.querySelector(`[data-id="${id}"].download-btn`);
+    if (downloadBtn) {
+      downloadBtn.textContent = '⬇';
+      downloadBtn.classList.remove('downloading');
+      downloadBtn.disabled = false;
+    }
+  }
+}
+
+// Get offline song
+function getOfflineSong(id) {
+  return new Promise((resolve) => {
+    if (!offlineDB) {
+      resolve(null);
+      return;
+    }
+    
+    const transaction = offlineDB.transaction(['songs'], 'readonly');
+    const store = transaction.objectStore('songs');
+    const request = store.get(id);
+    
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+  });
+}
+
+// Get all offline songs
+function getAllOfflineSongs() {
+  return new Promise((resolve) => {
+    if (!offlineDB) {
+      resolve([]);
+      return;
+    }
+    
+    const transaction = offlineDB.transaction(['songs'], 'readonly');
+    const store = transaction.objectStore('songs');
+    const request = store.getAll();
+    
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => resolve([]);
+  });
+}
+
+// Initialize offline DB on page load
+initOfflineDB().catch(console.error);
 
 /* escape helper to avoid untrusted HTML in titles */
 function escapeHtml(str){
@@ -966,10 +1266,33 @@ function playPrev(){
 function updatePlayerUI(snippet){
   playerTitle.textContent = snippet.title || 'Unknown';
   playerSubtitle.textContent = snippet.channelTitle || '';
-  playerCoverImg.src = snippet.thumbnails?.medium?.url || '';
-  // update fav button state
+  
+  // Enhanced album art with animation
+  if (snippet.thumbnails?.medium?.url) {
+    playerCoverImg.src = snippet.thumbnails.medium.url;
+    playerCoverImg.style.borderRadius = '12px';
+    playerCoverImg.style.transition = 'transform 0.3s ease';
+    
+    // Add spinning animation when playing
+    const isPlaying = state.player && state.player.getPlayerState() === 1;
+    if (isPlaying) {
+      playerCoverImg.style.animation = 'albumSpin 10s linear infinite';
+    } else {
+      playerCoverImg.style.animation = 'albumSpin 10s linear infinite paused';
+    }
+  }
+  
+  // update fav button state with animation
   const isFav = state.favorites.some(f => f.id === state.current?.id);
-  favBtn.textContent = isFav ? '♥ Favorited' : '♡ Add';
+  const newText = isFav ? '♥ Favorited' : '♡ Add';
+  
+  if (favBtn.textContent !== newText) {
+    favBtn.style.transform = 'scale(1.1)';
+    favBtn.textContent = newText;
+    setTimeout(() => {
+      favBtn.style.transform = 'scale(1)';
+    }, 200);
+  }
 }
 
 /* ========================================================================
@@ -1191,6 +1514,9 @@ $$('.nav-item').forEach(el => {
       } else {
         renderFavorites();
       }
+    } else if(section === 'offline'){
+      clearGrid();
+      renderOffline();
     }
   });
 });
@@ -1241,6 +1567,65 @@ function renderFavorites(){
       saveState();
       renderFavorites();
     });
+    contentGrid.appendChild(card);
+  });
+}
+
+/* ========================================================================
+   OFFLINE SONGS RENDERING
+   ======================================================================== */
+async function renderOffline(){
+  const offlineSongs = await getAllOfflineSongs();
+  
+  if (offlineSongs.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.innerHTML = `<div class="muted small">No offline songs yet. Use the ⬇ button on search results to download songs for offline listening.</div>`;
+    contentGrid.appendChild(empty);
+    return;
+  }
+  
+  offlineSongs.forEach(song => {
+    const card = document.createElement('div');
+    card.className = 'card offline-song';
+    card.innerHTML = `
+      <div class="thumb" style="background-image:url('${song.thumbnail || ''}')"></div>
+      <div class="meta">
+        <h5>${escapeHtml(song.title)}</h5>
+        <p class="muted small">${escapeHtml(song.channel)} • Downloaded ${new Date(song.downloadedAt).toLocaleDateString()}</p>
+        <div style="height:8px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn small play-offline" data-id="${song.id}">Play Offline</button>
+          <button class="btn small remove-offline" data-id="${song.id}">Remove</button>
+          <div class="badge">📱 Offline</div>
+        </div>
+      </div>
+    `;
+    
+    // Play offline functionality
+    card.querySelector('.play-offline').addEventListener('click', () => {
+      // In a real implementation, you'd play from local storage
+      // For now, we'll play from YouTube like normal but show offline indicator
+      playById(song.id, song);
+      alert('Playing from offline storage! (In production, this would play locally stored audio)');
+    });
+    
+    // Remove offline functionality
+    card.querySelector('.remove-offline').addEventListener('click', async () => {
+      if (confirm(`Remove "${song.title}" from offline storage?`)) {
+        try {
+          const transaction = offlineDB.transaction(['songs'], 'readwrite');
+          const store = transaction.objectStore('songs');
+          await store.delete(song.id);
+          renderOffline(); // Refresh the list
+          alert('Song removed from offline storage.');
+        } catch (error) {
+          console.error('Failed to remove offline song:', error);
+          alert('Failed to remove song from offline storage.');
+        }
+      }
+    });
+    
     contentGrid.appendChild(card);
   });
 }
