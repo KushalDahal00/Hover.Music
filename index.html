@@ -7,30 +7,275 @@
 <meta name="theme-color" content="#0f1720" />
 <link rel="manifest" href="manifest.json" />
 <link type="text/javascript" href="sw.js">
+<!-- Add Framer Motion via CDN for animations -->
+<script src="https://unpkg.com/framer-motion@10/dist/framer-motion.js"></script>
 <style>
 :root{
-  --bg:#1771f8;
-  --panel:#0d7637;
-  --muted:#aecfeb;
-  --accent:#1db954;
-  --glass:rgba(47, 15, 192, 0.03);
-  --card:#14171a;
-  --glass-2: rgba(238, 21, 21, 0.02);
-  --danger: #ff5b5b;
-  --success: #1db954;
-  --shadow: 0 8px 30px rgba(78, 151, 105, 0.6);
+  --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --landing-bg: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  --panel:#ffffff;
+  --muted:#6b7280;
+  --accent:#8b5cf6;
+  --glass:rgba(255, 255, 255, 0.25);
+  --card:#ffffff;
+  --glass-2: rgba(255, 255, 255, 0.1);
+  --danger: #ef4444;
+  --success: #10b981;
+  --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body,#app{height:100%}
 body{
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background:linear-gradient(180deg,var(--bg),#07080a 140%);
-  color:#e6eef3;
+  background: var(--landing-bg);
+  color: var(--text-primary);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   overflow:hidden;
   min-height:100vh;
   line-height:1.2;
+  transition: all 0.3s ease;
+}
+
+/* Landing Page Styles */
+#landing-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--landing-bg);
+  z-index: 1000;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#landing-page.hidden {
+  opacity: 0;
+  transform: translateY(-100vh);
+  pointer-events: none;
+}
+
+.landing-header {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 10;
+}
+
+.landing-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 24px;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+}
+
+.landing-logo:hover {
+  transform: scale(1.1);
+}
+
+.landing-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 2rem;
+  position: relative;
+}
+
+.landing-main {
+  text-align: center;
+  max-width: 800px;
+  animation: fadeInUp 1s ease-out;
+}
+
+.landing-title {
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+
+.landing-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeInUp 1s ease-out 0.2s forwards;
+}
+
+.landing-search-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  opacity: 0;
+  animation: fadeInUp 1s ease-out 0.4s forwards;
+}
+
+.landing-search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4);
+}
+
+.landing-headphones {
+  position: absolute;
+  right: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 400px;
+  height: 400px;
+  opacity: 0.3;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%23667eea" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-1v13M9 19c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm12-3c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zM9 10l12-1" /></svg>') no-repeat center center;
+  background-size: contain;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-60%) rotate(5deg);
+  }
+}
+
+/* Search Overlay Styles */
+#search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#search-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.search-modal {
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 3rem;
+  max-width: 600px;
+  width: 90%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+  transform: scale(0.8) translateY(50px);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#search-overlay.show .search-modal {
+  transform: scale(1) translateY(0);
+}
+
+.search-modal h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.search-input-container {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.search-input-large {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.125rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input-large:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.search-input-large::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.search-actions-modal {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.search-btn-modal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.search-btn-modal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 ::-webkit-scrollbar{height:10px;width:10px}
 ::-webkit-scrollbar-thumb{background:#7c0202;border-radius:8px}
@@ -66,6 +311,15 @@ body{
   gap:18px;
   height:100vh;padding:18px;
   transition:all .3s ease;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+#app.show {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
 }
 #sidebar{
   grid-area:sidebar;background:linear-gradient(180deg,var(--panel),#0b0d0f);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:0;
@@ -163,6 +417,35 @@ nav.main-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 </style>
 </head>
 <body>
+<!-- Landing Page -->
+<div id="landing-page">
+  <div class="landing-header">
+    <div class="landing-logo">H.M</div>
+  </div>
+  
+  <div class="landing-content">
+    <div class="landing-main">
+      <h1 class="landing-title">Hover Music</h1>
+      <p class="landing-subtitle">Discover and enjoy your favorite music with a premium experience</p>
+      <button class="landing-search-btn" id="landingSearchBtn">Search</button>
+    </div>
+    <div class="landing-headphones"></div>
+  </div>
+</div>
+
+<!-- Search Overlay -->
+<div id="search-overlay">
+  <div class="search-modal">
+    <h2>Search for Music</h2>
+    <div class="search-input-container">
+      <input type="text" class="search-input-large" id="searchInputModal" placeholder="Search for tracks, artists, albums...">
+    </div>
+    <div class="search-actions-modal">
+      <button class="search-btn-modal" id="searchBtnModal">Search</button>
+      <button class="search-btn-modal close-btn" id="closeSearchBtn">Cancel</button>
+    </div>
+  </div>
+</div>
 <!-- ===========================
      Splash (loading)
      =========================== -->
@@ -295,6 +578,72 @@ nav.main-nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 
 <!-- service worker placeholder (will register sw.js) -->
 <script>
+/* ========================================================================
+   LANDING PAGE & SEARCH OVERLAY FUNCTIONALITY
+   ======================================================================== */
+
+// Landing page elements
+const landingPage = document.getElementById('landing-page');
+const landingSearchBtn = document.getElementById('landingSearchBtn');
+const searchOverlay = document.getElementById('search-overlay');
+const searchInputModal = document.getElementById('searchInputModal');
+const searchBtnModal = document.getElementById('searchBtnModal');
+const closeSearchBtn = document.getElementById('closeSearchBtn');
+const appContainer = document.getElementById('app');
+
+// Landing page to search overlay transition
+landingSearchBtn.addEventListener('click', () => {
+  searchOverlay.classList.add('show');
+  setTimeout(() => {
+    searchInputModal.focus();
+  }, 300);
+});
+
+// Close search overlay
+closeSearchBtn.addEventListener('click', () => {
+  searchOverlay.classList.remove('show');
+});
+
+// Search functionality from modal
+searchBtnModal.addEventListener('click', () => {
+  const query = searchInputModal.value.trim();
+  if (query) {
+    performSearch(query);
+  }
+});
+
+// Enter key in search modal
+searchInputModal.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const query = searchInputModal.value.trim();
+    if (query) {
+      performSearch(query);
+    }
+  }
+});
+
+// Perform search and transition to app
+function performSearch(query) {
+  // Hide landing page and search overlay
+  landingPage.classList.add('hidden');
+  searchOverlay.classList.remove('show');
+  
+  // Show app container
+  setTimeout(() => {
+    appContainer.classList.add('show');
+    // Update the main search input
+    const mainSearchInput = document.getElementById('searchInput');
+    if (mainSearchInput) {
+      mainSearchInput.value = query;
+      doSearch(query);
+    }
+    // Switch to search section
+    $$('.nav-item').forEach(x => x.classList.remove('active'));
+    const searchNavItem = $$('.nav-item[data-section="search"]')[0];
+    if (searchNavItem) searchNavItem.classList.add('active');
+  }, 800);
+}
+
 /*
   IMPORTANT:
   - This code is an expanded, working single-file application.
@@ -900,10 +1249,10 @@ function renderFavorites(){
    INIT APP
    ======================================================================== */
 function init(){
-  // hide splash
+  // hide splash and prepare app (but don't show it yet)
   setTimeout(()=> {
     splashEl.classList.add('hidden');
-    // begin with Home
+    // Prepare the app but keep it hidden until search is performed
     renderHome();
     renderPlaylistsUI();
     startProgressUpdater();
